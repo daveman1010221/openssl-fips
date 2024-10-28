@@ -10,6 +10,6 @@
       pkgs = import nixpkgs { };
     in
     {
-      packages.default = pkgs.callPackage ./openssl-fips.nix {};
+      defaultPackage.x86_64-linux = pkgs.callPackage ./openssl-fips.nix {};
     };
 }
