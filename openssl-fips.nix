@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, lib, gnumake, gcc, perl, coreutils }:
 
 stdenv.mkDerivation rec {
   pname = "openssl-fips";
@@ -6,23 +6,28 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://www.openssl.org/source/openssl-${version}.tar.gz";
-    sha256 = "<fips-source-sha256>";
+    sha256 = "6xqwR4FHQ2D3fDGKuJ2MWgOrw45j1lpgPKu/GwCh3JA=";
   };
 
+  # Add required build inputs
+  buildInputs = [ gnumake gcc perl ];
+  #! TODO: Move patchShebangs to a differnet function
   configurePhase = ''
-    ./Configure enable-fips --prefix=$out
+    patchShebangs .
+    ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
   '';
 
   buildPhase = ''
-    make
+    make -j16
   '';
 
   installPhase = ''
+    export LD_LIBRARY_PATH=$out/lib64
     make install_sw install_fips
-    $out/bin/openssl fipsinstall -out $out/etc/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
+    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     description = "FIPS-compliant OpenSSL ${version}";
     license = licenses.openssl;
     platforms = platforms.linux;
