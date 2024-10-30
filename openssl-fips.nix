@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
 
   # Add required build inputs
   buildInputs = [ gnumake gcc perl ];
-  #! TODO: Move patchShebangs to a differnet function
+
   configurePhase = ''
     patchShebangs .
     ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
@@ -22,8 +22,11 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    export LD_LIBRARY_PATH=$out/lib64
     make install_sw install_fips
+  '';
+
+  postInstall = ''
+    export LD_LIBRARY_PATH=$out/lib64:$out/lib
     $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
   '';
 
