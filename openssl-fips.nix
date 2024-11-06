@@ -28,6 +28,13 @@ stdenv.mkDerivation rec {
     echo "Appending custom commands to fixupPhase"
     export LD_LIBRARY_PATH=$out/lib64:$out/lib
     $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
+
+    # Fix the openssl.cnf file to include the fipsmodule.cnf file and enable FIPS mode
+    sed -i \
+    -e 's/^# \(\.include fipsmodule\.cnf\)/\1/' \
+    -e 's/^# \(fips = fips_sect\)/\1/' \
+    -e 's/^\(default = default_sect\)/# \1/' \
+    $out/etc/ssl/openssl.cnf
 '';
 
 
