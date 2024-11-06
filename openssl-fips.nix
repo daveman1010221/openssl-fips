@@ -21,13 +21,12 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    make install
+    make install -j$NIX_BUILD_CORES
+    
+    export LD_LIBRARY_PATH=$out/lib64:$out/lib
+    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
   '';
 
-  # postInstall = ''
-  #   export LD_LIBRARY_PATH=$out/lib64:$out/lib
-  #   $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
-  # '';
   
   meta = with lib; {
     description = "FIPS-compliant OpenSSL ${version}";
