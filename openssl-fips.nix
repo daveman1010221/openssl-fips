@@ -10,7 +10,6 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [ gnumake gcc perl ];
-  #phases = ["configurePhase" "buildPhase" "fixupPhase" "postInstall"];
 
   configurePhase =  ''
     patchShebangs .
@@ -23,12 +22,12 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     make install -j$NIX_BUILD_CORES
-  '';
 
-  fixupPhase = ''
-  echo "Appending custom commands to fixupPhase"
-  export LD_LIBRARY_PATH=$out/lib64:$out/lib
-  $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
+    runHook fixupPhase
+
+    echo "Appending custom commands to fixupPhase"
+    export LD_LIBRARY_PATH=$out/lib64:$out/lib
+    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 '';
 
 
