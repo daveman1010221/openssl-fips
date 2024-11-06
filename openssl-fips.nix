@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
 
     # Fix the openssl.cnf file to include the fipsmodule.cnf file and enable FIPS mode
     sed -i \
-    -e 's/^# \(\.include fipsmodule\.cnf\)/\1/' \
+    -e 's|^# \.include fipsmodule\.cnf|.include $out/etc/ssl/fipsmodule.cnf|' \
     -e 's/^# \(fips = fips_sect\)/\1/' \
     -e 's/^\(default = default_sect\)/# \1/' \
     $out/etc/ssl/openssl.cnf
