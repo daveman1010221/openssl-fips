@@ -57,6 +57,9 @@
                 -e 's/^# \(fips = fips_sect\)/\1/' \
                 -e 's/^\(default = default_sect\)/# \1/' \
                 $out/etc/ssl/openssl.cnf
+
+              # Remove the non-man docs (man docs are stored in /share/man)
+              rm -rf $out/share/doc
             '';
 
             meta = with pkgs.lib; {
