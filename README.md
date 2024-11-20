@@ -128,5 +128,4 @@ You can include the FIPS-compliant OpenSSL in a NixOS system configuration.
 
 ## License
 
-This project is licensed under the OpenSSL License. See the [LICENSE](https://openssl-library.org/source/license/index.html) on the OpenSSL website for more information.
-```
+This OpenSSL binary is built from the official OpenSSL source code, which is licensed under the [OpenSSL License](https://openssl-library.org/source/license/index.html). The nix-flake-openssl-fips repository is licensed under the [LICENSE](LICENSE.txt) file in the root of the repository.
