@@ -10,8 +10,11 @@ stdenv.mkDerivation {
   };
 
   nativeBuildInputs = [ perl gnumake ];
-  outputs = [ "bin" "dev" "out" "man" ];
 
+  # Add 'doc' output like the original does (and possibly 'etc' if needed)
+  outputs = [ "bin" "dev" "out" "man" "doc" ];
+
+  # Configure phase similar to original
   configurePhase = ''
     patchShebangs .
     ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
@@ -24,17 +27,50 @@ stdenv.mkDerivation {
   installPhase = ''
     make install -j$NIX_BUILD_CORES
 
-    # Move binaries to bin output
-    mkdir -p $bin
+    # After install, reorganize just like original does
+
+    # Binaries: move to bin output
+    mkdir -p $bin/bin
     if [ -d "$out/bin" ]; then
-      cp -r $out/bin/* $bin/
+      mv $out/bin/* $bin/bin/
+      rmdir $out/bin
+    fi
+
+    # Headers and pkg-config files: dev output
+    mkdir -p $dev/include $dev/lib/pkgconfig
+    if [ -d "$out/include" ]; then
+      mv $out/include/* $dev/include/
+      rmdir $out/include
+    fi
+    if [ -d "$out/lib/pkgconfig" ]; then
+      mv $out/lib/pkgconfig/* $dev/lib/pkgconfig/
+      rmdir $out/lib/pkgconfig
+    fi
+
+    # Man pages: man output
+    mkdir -p $man/share/man
+    if [ -d "$out/share/man" -a -n "$(ls -A $out/share/man)" ]; then
+      mv $out/share/man/* $man/share/man/
+      rmdir $out/share/man
+    fi
+
+    # Documentation: doc output (HTML docs, etc.)
+    # The original puts HTML docs under $doc/share/doc/openssl/html/
+    mkdir -p $doc/share/doc/openssl/html
+    if [ -d "$out/share/doc" ]; then
+      # If HTML docs are there (they appear if withDocs = true in original),
+      # move them to doc output
+      if [ -d "$out/share/doc/openssl/html" ]; then
+        mv $out/share/doc/openssl/html/* $doc/share/doc/openssl/html/
+      fi
+      rm -rf $out/share/doc
     fi
 
     # Set library path for fipsinstall
     export LD_LIBRARY_PATH=$out/lib64:$out/lib
 
     # Install the FIPS module
-    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
+    $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 
     # Update openssl.cnf to include FIPS configuration
     sed -i \
@@ -43,19 +79,12 @@ stdenv.mkDerivation {
       -e 's/^\(default = default_sect\)/# \1/' \
       $out/etc/ssl/openssl.cnf
 
-    # Organize headers and man pages
-    mkdir -p $dev/include $man/share/man
-    if [ -d "$out/include" ] && [ "$(ls -A $out/include)" ]; then
-      mv $out/include/* $dev/include/
-    fi
-    if [ -d "$out/share/man" ] && [ "$(ls -A $out/share/man)" ]; then
-      mv $out/share/man/* $man/share/man/
-    fi
-
-    rm -rf $out/share/doc
+    # Cleanup empty directories if any remain
+    find $out -type d -empty -delete
   '';
 
   postInstall = ''
+    # Adjust pkg-config files to point to $out
     sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
     sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
   '';
