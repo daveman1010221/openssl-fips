@@ -15,7 +15,7 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
-          # Define FIPS OpenSSL with outputs properly handled
+          # Define FIPS OpenSSL derivation
           opensslFips = pkgs.stdenv.mkDerivation rec {
             pname = "openssl-fips";
             version = "3.0.8";
@@ -38,12 +38,16 @@
 
             installPhase = ''
               make install -j$NIX_BUILD_CORES
-              
-              # Ensure the bin directory exists and has binaries
+
+              # Ensure output paths exist
               mkdir -p $bin $dev/include $man/share/man
+
+              # Move files to respective outputs
               mv $out/bin/* $bin/ || true
               mv $out/include/* $dev/include/ || true
               mv $out/share/man/* $man/share/man/ || true
+
+              # Remove unneeded documentation
               rm -rf $out/share/doc
             '';
 
@@ -59,7 +63,7 @@
 
           # Add `override` for attribute customization
           override = attrs: opensslFips.overrideAttrs (oldAttrs: attrs // {
-            outputs = oldAttrs.outputs;
+            outputs = oldAttrs.outputs or [ "bin" "dev" "out" "man" ];
           });
         });
     };
