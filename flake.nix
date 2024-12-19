@@ -15,9 +15,9 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
-          # Common logic for building FIPS-compliant OpenSSL
+          # Common logic for FIPS OpenSSL
           commonFips = { version, sha256 }:
-            pkgs.stdenv.mkDerivation {
+            pkgs.stdenv.mkDerivation rec {
               pname = "openssl-fips";
               inherit version;
 
@@ -62,7 +62,7 @@
                   -e 's/^\(default = default_sect\)/# \1/' \
                   $out/etc/ssl/openssl.cnf
 
-                # Move includes and man pages to their outputs
+                # Move includes and man pages
                 mkdir -p $dev/include
                 mkdir -p $man/share/man
                 if [ -d "$out/include" ] && [ "$(ls -A $out/include)" ]; then
@@ -88,18 +88,22 @@
               };
             };
 
-          # Define a specific FIPS version
+          # Define a stable FIPS version
           opensslFips3_0_8 = commonFips {
             version = "3.0.8";
             sha256 = "bBPSvzj98x6sPOKjRwc2c/XWMmM5jx9p0N9KQSU+Sz4=";
           };
 
-        in {
-          # Default package is the known-good FIPS version
-          default = opensslFips3_0_8;
+          # Add the override attribute to the default package
+          # This creates an `override` method that uses `overrideAttrs`
+          # so downstream flakes can call `.override { ... }` on it.
+          opensslFipsWithOverride = opensslFips3_0_8 // {
+            override = attrs: opensslFips3_0_8.overrideAttrs (old: old // attrs);
+          };
 
-          # Provide an override function using overrideAttrs
-          override = attrs: opensslFips3_0_8.overrideAttrs (old: old // attrs);
+        in {
+          # The default package is now the one with override capability
+          default = opensslFipsWithOverride;
         }
       );
     };
