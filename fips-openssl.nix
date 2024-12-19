@@ -1,11 +1,11 @@
-{ stdenv, perl, gnumake, fetchurl, patchShebangs, ... }:
+{ stdenv, lib, perl, gnumake, fetchurl, ... }:
 
 stdenv.mkDerivation {
   pname = "openssl-fips";
   version = "3.0.8";
 
   src = fetchurl {
-    url = "https://www.openssl.org/source/openssl-${version}.tar.gz";
+    url = "https://www.openssl.org/source/openssl-3.0.8.tar.gz";
     sha256 = "bBPSvzj98x6sPOKjRwc2c/XWMmM5jx9p0N9KQSU+Sz4=";
   };
 
@@ -60,7 +60,7 @@ stdenv.mkDerivation {
     sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     description = "FIPS-compliant OpenSSL ${version}";
     license = licenses.openssl;
     platforms = platforms.unix;
