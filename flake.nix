@@ -38,41 +38,38 @@
               buildPhase = ''
                 make -j$NIX_BUILD_CORES
               '';
+
               installPhase = ''
                 # Install the libraries
                 make install -j$NIX_BUILD_CORES
 
-              # Need to fixup the files so that when installed, the MAC is correct
-              # if you do not do this, the FIPS module will not load.
-                runHook fixupPhase
+                # Ensure binaries are copied to the bin output
+                mkdir -p $bin
+                if [ -d "$out/bin" ]; then
+                  cp -r $out/bin/* $bin/
+                fi
 
-              # Set the library path so that the FIPS module can be installed
+                # Ensure the FIPS module is installed correctly
                 export LD_LIBRARY_PATH=$out/lib64:$out/lib
-
-                # Install the FIPS module
                 $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 
-                # Fix the openssl.cnf file to include the fipsmodule.cnf file and enable FIPS mode
+                # Fix the openssl.cnf file to include the FIPS configuration
                 sed -i \
                   -e "s|^# \.include fipsmodule\.cnf|.include $out/etc/ssl/fipsmodule.cnf|" \
                   -e 's/^# \(fips = fips_sect\)/\1/' \
                   -e 's/^\(default = default_sect\)/# \1/' \
                   $out/etc/ssl/openssl.cnf
 
-              # Create destination directories
+                # Organize include and man pages
                 mkdir -p $dev/include
                 mkdir -p $man/share/man
-
-                # Check if include files exist before moving
                 if [ -d "$out/include" ] && [ "$(ls -A $out/include)" ]; then
                   mv $out/include/* $dev/include/
                 fi
-
-                # Check if man pages exist before moving
                 if [ -d "$out/share/man" ] && [ "$(ls -A $out/share/man)" ]; then
                   mv $out/share/man/* $man/share/man/
                 fi
-            
+
                 # Remove unnecessary documentation
                 rm -rf $out/share/doc
               '';
@@ -96,8 +93,10 @@
             sha256 = "bBPSvzj98x6sPOKjRwc2c/XWMmM5jx9p0N9KQSU+Sz4=";
           };
         in
-        # Add `override` support directly in the default package
-        opensslFips3_0_8 // {
+        {
+          default = opensslFips3_0_8;
+
+          # Include override functionality for extensions if needed
           override = attrs: pkgs.stdenv.mkDerivation (opensslFips3_0_8 // attrs);
         }
       );
