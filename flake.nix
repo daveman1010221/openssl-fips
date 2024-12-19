@@ -97,7 +97,8 @@
           default = opensslFips3_0_8;
 
           # Include override functionality for extensions if needed
-          override = attrs: pkgs.stdenv.mkDerivation (opensslFips3_0_8 // attrs);
+          override = attrs: commonFips (attrs // { version = opensslFips3_0_8.version; sha256 = opensslFips3_0_8.sha256; });
+
         }
       );
     };
