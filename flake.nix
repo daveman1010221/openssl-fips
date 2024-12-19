@@ -1,5 +1,5 @@
 {
-  description = "FIPS-compliant OpenSSL Flake";
+  description = "FIPS-compliant OpenSSL Flake with .override support";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
@@ -15,9 +15,8 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
-          # Common logic for FIPS OpenSSL
           commonFips = { version, sha256 }:
-            pkgs.stdenv.mkDerivation rec {
+            pkgs.stdenv.mkDerivation {
               pname = "openssl-fips";
               inherit version;
 
@@ -27,7 +26,6 @@
               };
 
               nativeBuildInputs = [ pkgs.perl pkgs.gnumake ];
-
               outputs = [ "bin" "dev" "out" "man" ];
 
               configurePhase = ''
@@ -35,36 +33,25 @@
                 ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
               '';
 
-              buildPhase = ''
-                make -j$NIX_BUILD_CORES
-              '';
+              buildPhase = "make -j$NIX_BUILD_CORES";
 
               installPhase = ''
-                # Install the libraries
                 make install -j$NIX_BUILD_CORES
-
-                # Ensure binaries are copied to the bin output
                 mkdir -p $bin
                 if [ -d "$out/bin" ]; then
                   cp -r $out/bin/* $bin/
                 fi
 
-                # Set library path for fipsinstall
                 export LD_LIBRARY_PATH=$out/lib64:$out/lib
-
-                # Install the FIPS module
                 $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 
-                # Update openssl.cnf to include FIPS configuration
                 sed -i \
                   -e "s|^# \.include fipsmodule\.cnf|.include $out/etc/ssl/fipsmodule.cnf|" \
                   -e 's/^# \(fips = fips_sect\)/\1/' \
                   -e 's/^\(default = default_sect\)/# \1/' \
                   $out/etc/ssl/openssl.cnf
 
-                # Move includes and man pages
-                mkdir -p $dev/include
-                mkdir -p $man/share/man
+                mkdir -p $dev/include $man/share/man
                 if [ -d "$out/include" ] && [ "$(ls -A $out/include)" ]; then
                   mv $out/include/* $dev/include/
                 fi
@@ -76,7 +63,6 @@
               '';
 
               postInstall = ''
-                # Update pkg-config paths
                 sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
                 sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
               '';
@@ -88,21 +74,17 @@
               };
             };
 
-          # Define a stable FIPS version
           opensslFips3_0_8 = commonFips {
             version = "3.0.8";
             sha256 = "bBPSvzj98x6sPOKjRwc2c/XWMmM5jx9p0N9KQSU+Sz4=";
           };
 
-          # Add the override attribute to the default package
-          # This creates an `override` method that uses `overrideAttrs`
-          # so downstream flakes can call `.override { ... }` on it.
+          # Add `.override` attribute manually
           opensslFipsWithOverride = opensslFips3_0_8 // {
-            override = attrs: opensslFips3_0_8.overrideAttrs (old: old // attrs);
+            override = newAttrs: opensslFips3_0_8.overrideAttrs (old: old // newAttrs);
           };
 
         in {
-          # The default package is now the one with override capability
           default = opensslFipsWithOverride;
         }
       );
