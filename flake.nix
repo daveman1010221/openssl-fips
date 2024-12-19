@@ -79,13 +79,12 @@
             sha256 = "bBPSvzj98x6sPOKjRwc2c/XWMmM5jx9p0N9KQSU+Sz4=";
           };
 
-          # Add `.override` attribute manually
-          opensslFipsWithOverride = opensslFips3_0_8 // {
-            override = newAttrs: opensslFips3_0_8.overrideAttrs (old: old // newAttrs);
-          };
-
         in {
-          default = opensslFipsWithOverride;
+          default = let
+            base = opensslFips3_0_8;
+          in base // {
+            override = f: base.overrideAttrs (old: f old);
+          };
         }
       );
     };
