@@ -14,7 +14,7 @@ stdenv.mkDerivation {
   # Add 'doc' output like the original does (and possibly 'etc' if needed)
   # "out" creates /etc/ssl/misc and /lib/engines-3 and /lib/ossl-modules
   # "bin" creates /bin, with just two binaries
-  outputs = [ "bin" "dev" "out" "man" "doc" ];
+  # outputs = [ "bin" "dev" "out" "man" "doc" ];
 
   # Configure phase similar to original
   configurePhase = ''
@@ -39,40 +39,40 @@ stdenv.mkDerivation {
     # Reorganize outputs, just like original openssl package does
 
     # Binaries: move to bin output
-    mkdir -p $bin/bin
-    mv $out/bin/* $bin/bin/ || true
-    #rmdir $out/bin || true
+    # mkdir -p $bin/bin
+    # cp -r $out/bin/* $bin/bin/ || true
+    # rmdir $out/bin || true
 
     # Headers and pkg-config files: dev output
-    mkdir -p $dev/include $dev/lib/pkgconfig
-    mv $out/include/* $dev/include/ || true
-    mv $out/lib/pkgconfig/* $dev/lib/pkgconfig/ || true
+    # mkdir -p $dev/include $dev/lib/pkgconfig
+    # cp -r $out/include/* $dev/include/ || true
+    # cp -r $out/lib/pkgconfig/* $dev/lib/pkgconfig/ || true
 
     # Man pages: man output
-    mkdir -p $man/share/man
-    if [ -d "$out/share/man" ]; then
-      mv $out/share/man/* $man/share/man/
-      rmdir $out/share/man
-    fi
+    # mkdir -p $man/share/man
+    # if [ -d "$out/share/man" ]; then
+      # cp -r $out/share/man/* $man/share/man/
+      # rmdir $out/share/man
+    # fi
 
     # Documentation: doc output (HTML docs, etc.)
     # The original puts HTML docs under $doc/share/doc/openssl/html/
-    mkdir -p $doc/share/doc/openssl/html
-    if [ -d "$out/share/doc" ]; then
-      if [ -d "$out/share/doc/openssl/html" ]; then
-        mv $out/share/doc/openssl/html/* $doc/share/doc/openssl/html/
-      fi
-      rm -rf $out/share/doc
-    fi
+    # mkdir -p $doc/share/doc/openssl/html
+    # if [ -d "$out/share/doc" ]; then
+      # if [ -d "$out/share/doc/openssl/html" ]; then
+        # cp -r $out/share/doc/openssl/html/* $doc/share/doc/openssl/html/
+      # fi
+      # rm -rf $out/share/doc
+    # fi
 
     # Clean up empty directories
-    find $out -type d -empty -delete
+    # find $out -type d -empty -delete
 
     # Set library path for fipsinstall
     export LD_LIBRARY_PATH=$out/lib
 
     # Install the FIPS module
-    $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
+    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
 
     # Update openssl.cnf to include FIPS configuration
     sed -i \
@@ -87,11 +87,11 @@ stdenv.mkDerivation {
 
   postInstall = ''
     # Adjust pkg-config files to point to $out
-    sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
-    sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
+    # sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
+    # sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
 
     # Set rpath so openssl can run without LD_LIBRARY_PATH
-    patchelf --set-rpath $out/lib $bin/bin/openssl
+    patchelf --set-rpath $out/lib $out/bin/openssl
   '';
 
   meta = with lib; {
