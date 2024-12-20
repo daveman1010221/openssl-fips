@@ -42,9 +42,10 @@ stdenv.mkDerivation {
     rmdir $out/bin || true
 
     runHook fixupPhase
-  '';
 
-  postInstall = ''
+    # Set the library path so that the FIPS module can be installed
+    export LD_LIBRARY_PATH=$out/lib
+
     # Adjust pkg-config files to point to $out
     if [ -d "$dev/lib/pkgconfig" ]; then
       sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
