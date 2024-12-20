@@ -19,7 +19,8 @@ stdenv.mkDerivation {
   # Configure phase similar to original
   configurePhase = ''
     patchShebangs .
-    ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl --libdir=lib
+    # ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl --libdir=lib
+    ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
   '';
 
   buildPhase = ''
