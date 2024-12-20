@@ -40,24 +40,17 @@ stdenv.mkDerivation {
     mkdir -p $bin/bin
     mv $out/bin/* $bin/bin/ || true
     rmdir $out/bin || true
+
+    runHook fixupPhase
   '';
 
-  postFixup = ''
-    # Set rpath so openssl can run without LD_LIBRARY_PATH
-    # patchelf --shrink-rpath $bin/bin/openssl
-    # patchelf --shrink-rpath $bin/bin/c_rehash
-
-    # patchelf --set-rpath $out/lib:$out/lib/engines-3:$out/lib/ossl-modules $bin/bin/openssl
-    # patchelf --set-rpath $out/lib:$out/lib/engines-3:$out/lib/ossl-modules $bin/bin/c_rehash
-
+  postInstall = ''
     # Adjust pkg-config files to point to $out
     if [ -d "$dev/lib/pkgconfig" ]; then
       sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
       sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
     fi
-  '';
 
-  postInstall = ''
     # Install the FIPS module
     $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
 
