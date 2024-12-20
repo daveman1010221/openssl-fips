@@ -68,11 +68,13 @@ stdenv.mkDerivation {
     # Clean up empty directories
     # find $out -type d -empty -delete
 
+    ln -s $out/lib $out/lib64
+
     # Set library path for fipsinstall
-    export LD_LIBRARY_PATH=$out/lib
+    export LD_LIBRARY_PATH=$out/lib64:$out/lib
 
     # Install the FIPS module
-    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
+    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 
     # Update openssl.cnf to include FIPS configuration
     sed -i \
