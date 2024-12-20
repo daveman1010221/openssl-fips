@@ -19,8 +19,7 @@ stdenv.mkDerivation {
   # Configure phase similar to original
   configurePhase = ''
     patchShebangs .
-    # ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl --libdir=lib
-    ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl
+    ./Configure enable-fips --prefix=$out --openssldir=$out/etc/ssl --libdir=$out/lib
   '';
 
   buildPhase = ''
@@ -37,49 +36,30 @@ stdenv.mkDerivation {
   installPhase = ''
     make install -j$NIX_BUILD_CORES
 
-    # Reorganize outputs, just like original openssl package does
-
-    # Binaries: move to bin output
+    # Binaries get move to the 'bin' output, but their DLLs stay put.
     mkdir -p $bin/bin
     mv $out/bin/* $bin/bin/ || true
     rmdir $out/bin || true
+  '';
 
-    # Headers and pkg-config files: dev output
-    # mkdir -p $dev/include $dev/lib/pkgconfig
-    # cp -r $out/include/* $dev/include/ || true
-    # cp -r $out/lib/pkgconfig/* $dev/lib/pkgconfig/ || true
+  postFixup = ''
+    # Set rpath so openssl can run without LD_LIBRARY_PATH
+    # patchelf --shrink-rpath $bin/bin/openssl
+    # patchelf --shrink-rpath $bin/bin/c_rehash
 
-    # Man pages: man output
-    # mkdir -p $man/share/man
-    # if [ -d "$out/share/man" ]; then
-      # cp -r $out/share/man/* $man/share/man/
-      # rmdir $out/share/man
-    # fi
+    # patchelf --set-rpath $out/lib:$out/lib/engines-3:$out/lib/ossl-modules $bin/bin/openssl
+    # patchelf --set-rpath $out/lib:$out/lib/engines-3:$out/lib/ossl-modules $bin/bin/c_rehash
 
-    # Documentation: doc output (HTML docs, etc.)
-    # The original puts HTML docs under $doc/share/doc/openssl/html/
-    # mkdir -p $doc/share/doc/openssl/html
-    # if [ -d "$out/share/doc" ]; then
-      # if [ -d "$out/share/doc/openssl/html" ]; then
-        # cp -r $out/share/doc/openssl/html/* $doc/share/doc/openssl/html/
-      # fi
-      # rm -rf $out/share/doc
-    # fi
+    # Adjust pkg-config files to point to $out
+    if [ -d "$dev/lib/pkgconfig" ]; then
+      sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
+      sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
+    fi
+  '';
 
-    # Clean up empty directories
-    # find $out -type d -empty -delete
-
-    # Need to fixup the files so that when installed, the MAC is correct
-    # if you do not do this, the FIPS module will not load.
-    runHook fixupPhase
-
-    #ln -s $out/lib $out/lib64
-
-    # Set library path for fipsinstall
-    export LD_LIBRARY_PATH=$out/lib64:$out/lib
-
+  postInstall = ''
     # Install the FIPS module
-    $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
+    $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib/ossl-modules/fips.so
 
     # Update openssl.cnf to include FIPS configuration
     sed -i \
@@ -87,18 +67,6 @@ stdenv.mkDerivation {
       -e 's/^# \(fips = fips_sect\)/\1/' \
       -e 's/^\(default = default_sect\)/# \1/' \
       $out/etc/ssl/openssl.cnf
-
-    # Cleanup empty directories if any remain
-    #find $out -type d -empty -delete
-  '';
-
-  postInstall = ''
-    # Adjust pkg-config files to point to $out
-    # sed -i "s|prefix=.*|prefix=$out|" $dev/lib/pkgconfig/*.pc
-    # sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
-
-    # Set rpath so openssl can run without LD_LIBRARY_PATH
-    patchelf --set-rpath $out/lib $bin/bin/openssl
   '';
 
   meta = with lib; {
