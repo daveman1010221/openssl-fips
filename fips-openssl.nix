@@ -41,7 +41,7 @@ stdenv.mkDerivation {
 
     # Binaries: move to bin output
     mkdir -p $bin/bin
-    cp -r $out/bin/* $bin/bin/ || true
+    mv $out/bin/* $bin/bin/ || true
     rmdir $out/bin || true
 
     # Headers and pkg-config files: dev output
