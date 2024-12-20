@@ -69,7 +69,11 @@ stdenv.mkDerivation {
     # Clean up empty directories
     # find $out -type d -empty -delete
 
-    ln -s $out/lib $out/lib64
+    # Need to fixup the files so that when installed, the MAC is correct
+    # if you do not do this, the FIPS module will not load.
+    runHook fixupPhase
+
+    #ln -s $out/lib $out/lib64
 
     # Set library path for fipsinstall
     export LD_LIBRARY_PATH=$out/lib64:$out/lib
@@ -85,7 +89,7 @@ stdenv.mkDerivation {
       $out/etc/ssl/openssl.cnf
 
     # Cleanup empty directories if any remain
-    find $out -type d -empty -delete
+    #find $out -type d -empty -delete
   '';
 
   postInstall = ''
