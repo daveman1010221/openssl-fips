@@ -1,3 +1,8 @@
+# Test my functionality by doing:
+# openssl version -d
+# openssl sha256 /dev/null
+# Followed by:
+# openssl md5 /dev/null
 {
   description = "FIPS-compliant OpenSSL Flake via callPackage";
 

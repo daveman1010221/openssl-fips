@@ -12,6 +12,8 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ perl gnumake ];
 
   # Add 'doc' output like the original does (and possibly 'etc' if needed)
+  # "out" creates /etc/ssl/misc and /lib/engines-3 and /lib/ossl-modules
+  # "bin" creates /bin, with just two binaries
   outputs = [ "bin" "dev" "out" "man" "doc" ];
 
   # Configure phase similar to original
@@ -24,6 +26,13 @@ stdenv.mkDerivation {
     make -j$NIX_BUILD_CORES
   '';
 
+  makeFlags = [
+    "MANDIR=$(man)/share/man"
+    "MANSUFFIX=ssl"
+  ];
+
+  enableParallelBuilding = true;
+
   installPhase = ''
     make install -j$NIX_BUILD_CORES
 
@@ -32,7 +41,7 @@ stdenv.mkDerivation {
     # Binaries: move to bin output
     mkdir -p $bin/bin
     mv $out/bin/* $bin/bin/ || true
-    rmdir $out/bin || true
+    #rmdir $out/bin || true
 
     # Headers and pkg-config files: dev output
     mkdir -p $dev/include $dev/lib/pkgconfig
