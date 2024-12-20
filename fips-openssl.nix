@@ -14,7 +14,7 @@ stdenv.mkDerivation {
   # Add 'doc' output like the original does (and possibly 'etc' if needed)
   # "out" creates /etc/ssl/misc and /lib/engines-3 and /lib/ossl-modules
   # "bin" creates /bin, with just two binaries
-  # outputs = [ "bin" "dev" "out" "man" "doc" ];
+  outputs = [ "bin" "dev" "out" "man" "doc" ];
 
   # Configure phase similar to original
   configurePhase = ''
@@ -40,9 +40,9 @@ stdenv.mkDerivation {
     # Reorganize outputs, just like original openssl package does
 
     # Binaries: move to bin output
-    # mkdir -p $bin/bin
-    # cp -r $out/bin/* $bin/bin/ || true
-    # rmdir $out/bin || true
+    mkdir -p $bin/bin
+    cp -r $out/bin/* $bin/bin/ || true
+    rmdir $out/bin || true
 
     # Headers and pkg-config files: dev output
     # mkdir -p $dev/include $dev/lib/pkgconfig
@@ -79,7 +79,7 @@ stdenv.mkDerivation {
     export LD_LIBRARY_PATH=$out/lib64:$out/lib
 
     # Install the FIPS module
-    $out/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
+    $bin/bin/openssl fipsinstall -out $out/etc/ssl/fipsmodule.cnf -module $out/lib64/ossl-modules/fips.so
 
     # Update openssl.cnf to include FIPS configuration
     sed -i \
@@ -98,7 +98,7 @@ stdenv.mkDerivation {
     # sed -i "s|exec_prefix=.*|exec_prefix=$out|" $dev/lib/pkgconfig/*.pc
 
     # Set rpath so openssl can run without LD_LIBRARY_PATH
-    patchelf --set-rpath $out/lib $out/bin/openssl
+    patchelf --set-rpath $out/lib $bin/bin/openssl
   '';
 
   meta = with lib; {
